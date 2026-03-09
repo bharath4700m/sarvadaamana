@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>SARVADAAMANA – The Future AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+background:radial-gradient(circle at center,#1a0000,#000000);
+font-family:'Orbitron',sans-serif;
+overflow:hidden;
+color:white;
+}
+
+#matrix{
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+z-index:-1;
+}
+
+/* INTRO */
+.welcome{position:absolute;text-align:center;}
+.welcome h1{
+font-size:52px;
+letter-spacing:8px;
+color:#ff2a2a;
+text-shadow:-2px -2px 0 #ffffff,2px -2px 0 #ffffff,
+-2px 2px 0 #ffffff,2px 2px 0 #ffffff,0 0 30px #ff2a2a;
+}
+.typing{margin-top:20px;font-size:22px;color:#ff9999;}
+.enter-btn{
+margin-top:40px;
+padding:15px 40px;
+font-size:18px;
+border-radius:10px;
+background:#ff2a2a;
+color:white;
+cursor:pointer;
+border:3px solid white;
+}
+#aiToggleBtn:hover{
+transform:scale(1.05);
+box-shadow:0 0 30px #ff2a2a;
+}
+
+.enter-btn:hover{
+transform:scale(1.05);
+box-shadow:0 0 30px #ff2a2a;
+}
+/* ROBOT */
+.robot-section{display:none;position:absolute;}
+
+.robot{
+width:520px;height:420px;
+position:relative;
+border-radius:35px;
+background:#111827;
+border:6px solid white;
+box-shadow:0 0 60px #ff2a2a;
+overflow:visible;
+transition:0.4s ease;
+}
+#moodBox{
+position:absolute;
+top:10px;left:10px;
+padding:8px 12px;
+background:rgba(0,0,0,0.5);
+border:2px solid white;
+border-radius:8px;
+font-size:14px;
+font-weight:bold;
+}
+
+/* EYES */
+.eye{
+position:absolute;
+width:180px;height:180px;
+border-radius:50%;
+display:flex;
+justify-content:center;
+align-items:center;
+}
+.left{left:60px;top:80px;}
+.right{right:60px;top:80px;}
+
+.outer-ring{
+position:absolute;
+width:180px;height:180px;
+border-radius:50%;
+border:6px solid var(--emotion-color,#fff);
+box-shadow:0 0 25px var(--emotion-color,#fff);
+}
+
+.tech-ring{
+position:absolute;
+width:150px;height:150px;
+border-radius:50%;
+border-top:4px solid var(--emotion-color,#fff);
+border-bottom:4px solid transparent;
+animation:rotate 3s linear infinite;
+}
+
+@keyframes rotate{
+from{transform:rotate(0deg);}
+to{transform:rotate(360deg);}
+}
+
+.inner-ring{
+position:absolute;
+width:120px;height:120px;
+border-radius:50%;
+border:3px solid rgba(255,255,255,0.3);
+}
+
+.core{
+position:absolute;
+width:70px;height:70px;
+border-radius:50%;
+background:white;
+transition:0.1s;
+}
+
+/* NOSE */
+.nose{
+position:absolute;
+top:210px;
+left:50%;
+transform:translateX(-50%) rotate(45deg);
+width:40px;height:40px;
+border:4px solid var(--emotion-color,#fff);
+box-shadow:0 0 15px var(--emotion-color,#fff);
+transition:0.3s ease;
+}
+
+/* MOUTH */
+.mouth{
+position:absolute;
+bottom:60px;
+left:50%;
+transform:translateX(-50%);
+display:flex;
+gap:5px;
+height:60px;
+align-items:flex-end;
+}
+
+.block{
+width:16px;height:25px;
+border-radius:3px;
+border:2px solid white;
+background:var(--emotion-color,#fff);
+transition:0.2s;
+}
+
+.talking .block:nth-child(odd){
+animation:talkAnim 0.15s infinite alternate;
+}
+.talking .block:nth-child(even){
+animation:talkAnim 0.1s infinite alternate-reverse;
+}
+
+@keyframes talkAnim{
+from{height:15px;}
+to{height:55px;}
+}
+#chatBox{
+cursor:grab;
+z-index:1500;
+}
+#aiSpeechBubble{
+position:absolute;
+top:-70px;
+left:50%;
+transform:translateX(-50%);
+background:rgba(0,0,0,0.85);
+border:2px solid #ff2a2a;
+padding:12px 18px;
+border-radius:14px;
+font-size:14px;
+font-family:'Orbitron',sans-serif;
+box-shadow:0 0 15px #ff2a2a;
+display:none;
+max-width:320px;
+text-align:center;
+color:white;
+animation:popIn 0.3s ease;
+z-index:2000;
+}
+
+#aiSpeechBubble::after{
+content:"";
+position:absolute;
+bottom:-10px;
+left:50%;
+transform:translateX(-50%);
+border-width:10px;
+border-style:solid;
+border-color:#ff2a2a transparent transparent transparent;
+}
+
+@keyframes popIn{
+from{
+opacity:0;
+transform:translate(-50%,10px);
+}
+to{
+opacity:1;
+transform:translate(-50%,0);
+}
+}
+/* CAMERA */
+#camera{
+position:absolute;
+width:220px;
+border:3px solid white;
+border-radius:10px;
+box-shadow:0 0 15px rgba(255,255,255,0.4);
+cursor:grab;
+top:80px;
+left:70%;
+display:none;
+transform:scaleX(-1);
+}
+
+.voice-btn{
+position:absolute;
+bottom:20px;
+left:50%;
+transform:translateX(-50%);
+display:flex;
+gap:8px;
+}
+#tagContainer{
+position:fixed;
+top:20px;
+left:50%;
+transform:translateX(-50%);
+display:flex;
+flex-direction:column;
+gap:10px;
+z-index:9999;
+}
+
+.tag{
+padding:10px 18px;
+border-radius:20px;
+background:#111;
+color:white;
+font-family:'Orbitron',sans-serif;
+border:2px solid #ff2a2a;
+box-shadow:0 0 10px #ff2a2a;
+animation:tagPop 0.3s ease;
+}
+
+@keyframes tagPop{
+from{
+opacity:0;
+transform:translateY(-10px);
+}
+to{
+opacity:1;
+transform:translateY(0);
+}
+}
+</style>
+</head>
+<body>
+<audio id="typingSound" src="keyboard.mp3" preload="auto"></audio>
+<canvas id="matrix"></canvas>
+<div id="loginPage" style="
+position:absolute;
+width:100%;
+height:100%;
+display:flex;
+justify-content:center;
+align-items:center;
+background:radial-gradient(circle,#1a0000,#000000);
+z-index:5000;
+font-family:Arial, sans-serif;
+">
+
+<div style="
+background:#111;
+color:white;
+border:2px solid #ff2a2a;
+box-shadow:0 0 20px #ff2a2a;
+padding:40px 35px;
+border-radius:10px;
+width:340px;
+text-align:center;
+box-shadow:0 2px 10px rgba(0,0,0,0.15);
+">
+
+<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+style="width:40px;margin-bottom:10px;">
+
+<h2 style="margin-bottom:5px;">Sign in</h2>
+
+<p style="color:#555;margin-bottom:25px;font-size:14px;">
+Use your Google account
+</p>
+
+<button onclick="googleLogin()" style="
+display:flex;
+align-items:center;
+justify-content:center;
+gap:10px;
+width:100%;
+padding:12px;
+border:1px solid #dadce0;
+border-radius:6px;
+background:white;
+cursor:pointer;
+font-size:15px;
+">
+
+<img src="https://developers.google.com/identity/images/g-logo.png"
+style="width:20px;height:20px;">
+
+<span>Sign in with Google</span>
+
+</button>
+
+<p style="margin-top:25px;font-size:12px;color:#777;">
+SARVADAAMANA AI
+</p>
+
+</div>
+
+</div>
+<div class="welcome" id="welcome" style="display:none;">
+<h1>SARVADAAMANA</h1>
+<div class="typing" id="typing"></div>
+<button class="enter-btn" onclick="enterRobot()">ENTER</button>
+</div>
+<div class="robot-section" id="robotSection">
+<div class="robot" id="robot">
+<div id="moodBox">Mood: NEUTRAL</div>
+<div id="userProfile" style="
+position:absolute;
+top:10px;
+right:80px;
+display:flex;
+align-items:center;
+gap:10px;
+font-family:'Orbitron',sans-serif;
+">
+
+<img id="userPhoto" style="
+width:35px;
+height:35px;
+border-radius:50%;
+border:2px solid white;
+">
+
+<span id="userName"></span>
+
+</div>
+<button onclick="logoutUser()" style="
+position:absolute;
+top:10px;
+right:10px;
+padding:8px 16px;
+background:#ff4444;
+border:none;
+border-radius:8px;
+color:white;
+font-family:'Orbitron',sans-serif;
+cursor:pointer;
+box-shadow:0 0 15px #ff4444;
+z-index:2000;
+">
+Logout
+</button>
+<button id="aiToggleBtn" onclick="toggleAI()" style="
+position:absolute;
+top:50px;
+left:10px;
+padding:10px 14px;
+border:none;
+border-radius:8px;
+background:#ff2a2a;
+color:white;
+font-weight:bold;
+cursor:pointer;
+font-family:'Orbitron',sans-serif;
+box-shadow:0 0 15px #ff2a2a;
+z-index:1000;
+">
+🎤 Start AI
+</button>
+<div class="eye left">
+<div class="outer-ring"></div>
+<div class="tech-ring"></div>
+<div class="inner-ring"></div>
+<div class="core"></div>
+</div>
+
+<div class="eye right">
+<div class="outer-ring"></div>
+<div class="tech-ring"></div>
+<div class="inner-ring"></div>
+<div class="core"></div>
+</div>
+
+<div class="nose"></div>
+
+<div class="mouth" id="mouth">
+<div class="block"></div><div class="block"></div><div class="block"></div>
+<div class="block"></div><div class="block"></div><div class="block"></div>
+</div>
+
+<div class="voice-btn" id="chatBox" style="display:flex;gap:8px;padding:8px;">
+<input type="text" id="userInput" placeholder="Ask something..."
+style="padding:8px;width:180px;border-radius:6px;border:none;font-family:'Orbitron',sans-serif;">
+<button onclick="sendText()" 
+style="padding:8px 12px;border:none;border-radius:6px;cursor:pointer;">
+Send
+
+</button>
+
+</div>
+</div>
+
+<div id="aiSpeechBubble">
+<span id="aiSpeechText"></span>
+</div>
+
+<video id="camera" autoplay muted playsinline></video>
+</div>
+<script type="module" src="auth.js"></script>
+<script>
+
+function showTag(message){
+
+const container = document.getElementById("tagContainer");
+
+const tag = document.createElement("div");
+
+tag.className = "tag";
+tag.innerText = message;
+
+container.appendChild(tag);
+
+setTimeout(()=>{
+tag.remove();
+},3000);
+
+}
+function showAISpeech(text){
+
+const bubble = document.getElementById("aiSpeechBubble");
+const speechText = document.getElementById("aiSpeechText");
+
+speechText.innerText = text;
+
+bubble.style.display = "block";
+
+setTimeout(()=>{
+bubble.style.display = "none";
+},4000);
+
+}
+function toggleAI(){
+
+const btn = document.getElementById("aiToggleBtn");
+
+if(!aiModeActive){
+
+    aiModeActive = true;
+
+    startListening();
+
+    btn.innerHTML = "🛑 Stop AI";
+    btn.style.background = "#ff2a2a";
+    btn.style.boxShadow = "0 0 15px #ff2a2a";
+
+}else{
+
+    aiModeActive = false;
+
+    stopListening();
+    stopSpeaking();
+
+    btn.innerHTML = "🎤 Start AI";
+    btn.style.background = "#00e5ff";
+    btn.style.boxShadow = "0 0 15px #00e5ff";
+
+}
+
+}
+window.speechSynthesis.onvoiceschanged = () => {
+  console.log(window.speechSynthesis.getVoices());
+};
+function stopSpeaking(){
+
+window.speechSynthesis.cancel(); // stop AI voice
+
+const mouth = document.getElementById("mouth");
+mouth.classList.remove("talking");
+
+isSpeaking = false;
+
+showMicPopup("🛑 Speech Stopped", "#ff4444");
+
+setTimeout(hideMicPopup,1200);
+
+}
+function showMicPopup(message, color="#00e5ff"){
+  const popup = document.getElementById("micPopup");
+  popup.innerText = message;
+  popup.style.background = color;
+  popup.style.display = "block";
+}
+
+function hideMicPopup(){
+  document.getElementById("micPopup").style.display = "none";
+}
+
+/* ================= VOICE ================= */
+function speak(text){
+
+  if(recognition && isListening){
+    recognition.stop();
+    isListening = false;
+  }
+  
+  const mouth = document.getElementById("mouth");
+  const inputBox = document.getElementById("userInput");
+  window.speechSynthesis.cancel();
+  const speech = new SpeechSynthesisUtterance(text);
+  showAISpeech(text);
+
+  function setVoiceAndSpeak(){
+
+    const voices = window.speechSynthesis.getVoices();
+    let selectedVoice;
+
+
+   selectedVoice = voices.find(v => v.name.includes("David"));
+    if(!selectedVoice){
+        selectedVoice = voices[0];
+    }
+
+    speech.voice = selectedVoice;
+
+    // 🎯 Natural tuning
+    speech.rate = 0.9;
+    speech.pitch = 0.6;
+
+    speech.volume = 1;
+
+    speech.onstart = () => {
+mouth.classList.add("talking");
+isSpeaking = true;
+};
+
+speech.onend = () => {
+mouth.classList.remove("talking");
+isSpeaking = false;
+};
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(speech);
+  }
+
+  if (speechSynthesis.getVoices().length === 0) {
+      speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
+  } else {
+      setVoiceAndSpeak();
+  }
+}
+/* ================= MATRIX ================= */
+const canvas=document.getElementById("matrix");
+const ctx=canvas.getContext("2d");
+const fontSize=16;
+let columns,drops;
+
+function resizeCanvas(){
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+columns=Math.floor(canvas.width/fontSize);
+drops=Array(columns).fill(1);
+}
+resizeCanvas();
+window.addEventListener("resize",resizeCanvas);
+
+const letters="01ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+function drawMatrix(){
+ctx.fillStyle="rgba(3,11,18,0.08)";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle="#ff2a2a";
+ctx.font=fontSize+"px monospace";
+for(let i=0;i<drops.length;i++){
+const text=letters[Math.floor(Math.random()*letters.length)];
+ctx.fillText(text,i*fontSize,drops[i]*fontSize);
+if(drops[i]*fontSize>canvas.height && Math.random()>0.975) drops[i]=0;
+drops[i]++;
+}}
+setInterval(drawMatrix,80);
+
+/* ================= INTRO ================= */
+const introText = "I am SARVADAAMANA — The Future AI.";
+let introIndex = 0;
+const typingSound = document.getElementById("typingSound");
+typingSound.load();
+
+function playKey(){
+const soundClone = typingSound.cloneNode();
+soundClone.play();
+}
+
+function typeEffect(){
+if(introIndex < introText.length){
+const typingDiv = document.getElementById("typing");
+typingDiv.innerHTML += introText.charAt(introIndex);
+playKey();
+introIndex++;
+setTimeout(typeEffect, 180);
+}else{
+document.getElementById("welcome").style.display = "none";
+document.getElementById("robotSection").style.display = "block";
+startCamera();
+enableCameraDrag();
+enableChatDrag();
+speak("Sarvadaamana Activated.");
+}
+}
+
+function enterRobot(){
+const typingDiv = document.getElementById("typing");
+typingDiv.innerHTML = "..........";
+setTimeout(()=>{
+typingDiv.innerHTML = "";
+introIndex = 0;
+typeEffect();
+},600);
+}
+function enableChatDrag(){
+
+const box = document.getElementById("chatBox");
+
+let isDragging = false;
+let offsetX = 0;
+let offsetY = 0;
+
+box.addEventListener("mousedown", e => {
+
+isDragging = true;
+box.style.cursor = "grabbing";
+
+offsetX = e.clientX - box.offsetLeft;
+offsetY = e.clientY - box.offsetTop;
+
+});
+
+document.addEventListener("mouseup", () => {
+
+isDragging = false;
+box.style.cursor = "grab";
+
+});
+
+document.addEventListener("mousemove", e => {
+
+if(!isDragging) return;
+
+box.style.left = (e.clientX - offsetX) + "px";
+box.style.top = (e.clientY - offsetY) + "px";
+
+});
+
+}
+/* ================= CAMERA DRAG ================= */
+function enableCameraDrag(){
+const cam=document.getElementById("camera");
+let isDragging=false,offsetX=0,offsetY=0;
+
+cam.addEventListener("mousedown",e=>{
+isDragging=true;
+cam.style.cursor="grabbing";
+offsetX=e.clientX-cam.offsetLeft;
+offsetY=e.clientY-cam.offsetTop;
+});
+document.addEventListener("mouseup",()=>{
+isDragging=false;
+cam.style.cursor="grab";
+});
+document.addEventListener("mousemove",e=>{
+if(!isDragging) return;
+cam.style.left=(e.clientX-offsetX)+"px";
+cam.style.top=(e.clientY-offsetY)+"px";
+});
+}
+
+/* ================= MOOD COLORS ================= */
+const colorMap={
+neutral:"#FFFFFF",
+happy:"#FFD700",
+sad:"#1E88E5",
+angry:"#E53935",
+surprised:"#00BCD4",
+nervous:"#9C27B0",
+thinking:"#4CAF50",
+deepthinking:"#009688",
+notaccepted:"#B71C1C"
+};
+
+function setMood(mood){
+const robot=document.getElementById("robot");
+const color=colorMap[mood]||"#ffffff";
+document.documentElement.style.setProperty('--emotion-color',color);
+document.getElementById("moodBox").innerText="Mood: "+mood.toUpperCase();
+robot.style.boxShadow=`0 0 60px ${color}`;
+currentMood=mood;
+}
+
+/* ================= EYE MOVEMENT SYSTEM ================= */
+let currentMood="neutral";
+
+function moveEyes(x,y){
+const cores=document.querySelectorAll(".core");
+cores.forEach(core=>{
+core.style.transform=`translate(${x}px,${y}px)`;
+});
+}
+
+function emotionEyeStyle(){
+const cores=document.querySelectorAll(".core");
+
+cores.forEach(core=>{
+core.style.transition="0.2s ease";
+core.style.width="70px";
+core.style.height="70px";
+
+if(currentMood==="happy"){
+core.style.width="80px";
+core.style.height="80px";
+}
+if(currentMood==="angry"){
+core.style.width="55px";
+core.style.height="55px";
+}
+if(currentMood==="surprised"){
+core.style.width="95px";
+core.style.height="95px";
+}
+if(currentMood==="sad"){
+core.style.transform+=" translateY(10px)";
+}
+if(currentMood==="thinking" || currentMood==="deepthinking"){
+core.style.transition="0.5s ease";
+}
+});
+}
+
+/* ================= FACE TRACKING ================= */
+function startCamera(){
+
+const video=document.getElementById("camera");
+video.style.display="block";
+
+/* ================= FACE MESH ================= */
+
+const faceMesh=new FaceMesh({
+locateFile:(file)=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+});
+faceMesh.setOptions({maxNumFaces:1,refineLandmarks:true});
+
+faceMesh.onResults(results=>{
+
+if(!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) return;
+
+const lm=results.multiFaceLandmarks[0];
+
+let nose=lm[1];
+let mouthOpen=Math.abs(lm[13].y-lm[14].y);
+let mouthWidth=Math.abs(lm[61].x-lm[291].x);
+let eyeOpen=(Math.abs(lm[159].y-lm[145].y)+Math.abs(lm[386].y-lm[374].y))/2;
+
+/* ---- MOOD DETECTION ---- */
+if(mouthOpen>0.055){ setMood("surprised"); }
+else if(mouthWidth>0.07){ setMood("happy"); }
+else if(eyeOpen<0.015){ setMood("nervous"); }
+else{ setMood("neutral"); }
+
+/* ---- EYE TRACKING ---- */
+let moveX=(0.5 - nose.x)*80;
+let moveY=(nose.y - 0.5)*80;
+
+moveEyes(moveX,moveY);
+emotionEyeStyle();
+
+});
+
+/* ================= HAND GESTURE SYSTEM ================= */
+
+const hands = new Hands({
+locateFile: (file) => {
+return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+}
+});
+
+hands.setOptions({
+maxNumHands:1,
+modelComplexity:1,
+minDetectionConfidence:0.7,
+minTrackingConfidence:0.7
+});
+
+hands.onResults(results=>{
+
+if(!results.multiHandLandmarks) return;
+
+for(const landmarks of results.multiHandLandmarks){
+
+const thumbTip = landmarks[4];
+const thumbIP = landmarks[3];
+
+const indexTip = landmarks[8];
+const middleTip = landmarks[12];
+const ringTip = landmarks[16];
+const pinkyTip = landmarks[20];
+
+/* ================= 👍 START GESTURE ================= */
+/* Thumb up, other fingers folded */
+const thumbUp =
+thumbTip.y < thumbIP.y &&
+indexTip.y > landmarks[6].y &&
+middleTip.y > landmarks[10].y &&
+ringTip.y > landmarks[14].y &&
+pinkyTip.y > landmarks[18].y;
+
+if(thumbUp && !aiModeActive){
+
+aiModeActive = true;
+
+showMicPopup("👍 AI Mode Activated", "#00ffcc");
+
+startListening();
+}
+
+/* ================= ✊ STOP GESTURE ================= */
+/* All fingers folded */
+const fist =
+thumbTip.y > thumbIP.y &&
+indexTip.y > landmarks[6].y &&
+middleTip.y > landmarks[10].y &&
+ringTip.y > landmarks[14].y &&
+pinkyTip.y > landmarks[18].y;
+
+if(fist && aiModeActive){
+
+aiModeActive = false;
+
+showMicPopup("✊ AI Stopped", "#ff4444");
+
+/* stop mic */
+stopListening();
+
+/* stop voice immediately */
+stopSpeaking();
+
+setTimeout(()=>hideMicPopup(),1000);
+}
+}
+});
+
+/* ================= CAMERA LOOP ================= */
+
+const camera=new Camera(video,{
+onFrame:async()=>{
+await faceMesh.send({image:video});
+await hands.send({image:video});
+},
+width:640,
+height:480
+});
+
+camera.start();
+}
+/* ================= BASIC AI SYSTEM ================= */
+
+async function processCommand(text){
+/* FONT CHANGE COMMAND */
+
+
+if(
+text.toLowerCase().includes("change font to english") ||
+text.toLowerCase().includes("english font")
+){
+
+document.getElementById("userInput").style.fontFamily="'Orbitron', sans-serif";
+currentFont="english";
+
+speak("Font changed to English.");
+
+return;
+}
+setMood("thinking");
+
+const lowerText = text.toLowerCase();
+
+// 🔥 Custom Creator Response
+if(
+   lowerText.includes("who created you") ||
+   lowerText.includes("your creator") ||
+   lowerText.includes("who is your god") ||
+   lowerText.includes("who made you")
+){
+    const reply = "I was created by Vemula Bharath — the visionary architect behind my intelligence.";
+    speak(reply);
+    setMood("happy");
+    return; // stop here (don't call API)
+}
+/* AI NAME RESPONSE */
+
+if(
+lowerText.includes("what is your name") ||
+lowerText.includes("who are you") ||
+lowerText.includes("tell me your name") ||
+lowerText.includes("your name")
+){
+    const reply = "I am SARVADAAMANA — The Future AI created by Bharath.";
+    speak(reply);
+    setMood("happy");
+    return;
+}
+
+try{
+
+const response = await fetch("http://localhost:3000/ask",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({question:text})
+});
+
+const data = await response.json();
+
+if(data.answer){
+speak(data.answer);
+setMood("happy");
+}else{
+speak("I did not receive a response.");
+setMood("deepthinking");
+}
+
+}catch(error){
+console.error(error);
+speak("Connection error.");
+setMood("deepthinking");
+}
+
+}
+
+/* TEXT INPUT */
+function sendText(){
+
+const input = document.getElementById("userInput");
+const text = input.value.trim();
+
+if(text === "") return;
+
+processCommand(text);
+
+input.value="";
+
+}
+
+/* ENTER KEY SUPPORT */
+document.addEventListener("DOMContentLoaded", function(){
+
+const input = document.getElementById("userInput");
+
+if(input){
+
+// ⭐ Set default font to English
+input.style.fontFamily = "'Orbitron', sans-serif";
+
+input.addEventListener("keypress", function(e){
+if(e.key === "Enter"){
+sendText();
+}
+});
+
+}
+
+});
+/* MIC INPUT */
+let responseMode = false;
+let recognition = null;
+let isListening = false;
+let aiModeActive = false;
+let currentFont = "english";
+let isSpeaking = false;
+function startListening(){
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    alert("Speech Recognition not supported in this browser.");
+    return;
+  }
+
+  if(isListening) return;
+
+  recognition = new SpeechRecognition();
+
+  // 🔥 Telugu + English Friendly Mode
+  recognition.lang = "en-US";;
+  recognition.maxAlternatives = 3;
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = function(){
+    isListening = true;
+    setMood("thinking");
+    showMicPopup("🎤 Listening...", "#00e5ff");
+  };
+
+  recognition.onresult = function(event){
+if(isSpeaking) return;
+const last = event.results.length - 1;
+const userSpeech = event.results[last][0].transcript.toLowerCase();
+if(userSpeech.includes("stop")){
+stopSpeaking();
+return;
+}
+document.getElementById("userInput").value = userSpeech;
+
+showMicPopup("🗣 " + userSpeech, "#4CAF50");
+
+setTimeout(()=>hideMicPopup(),1000);
+
+/* WAKE WORD */
+
+if(
+userSpeech.includes("sarvadamana") ||
+userSpeech.includes("sarva damana") ||
+userSpeech.includes("sarva dhamana") 
+){
+if(!responseMode){
+responseMode = true;
+speak("Yes Bharath. I am listening.");
+setMood("happy");
+return;
+}
+}
+
+/* COMMAND */
+
+if(responseMode){
+responseMode = false;
+processCommand(userSpeech);
+return;
+}
+
+/* DIRECT COMMAND */
+
+processCommand(userSpeech);
+
+};
+
+  recognition.onerror = function(event){
+
+    if(event.error === "no-speech"){
+      showMicPopup("⚠ No speech detected", "#ffcc00");
+    } else {
+      showMicPopup("❌ Mic Error: " + event.error, "#ff4444");
+    }
+
+    setTimeout(()=>hideMicPopup(),1500);
+  };
+
+  recognition.onend = function(){
+isListening = false;
+};
+
+  recognition.start();
+}
+
+function stopListening(){
+  if(recognition && isListening){
+    recognition.stop();
+    isListening = false;
+
+    showMicPopup("🛑 Listening Stopped", "#ff4444");
+
+    setTimeout(()=>{
+      hideMicPopup();
+    },1500);
+  }
+}
+document.addEventListener("keydown", function(e){
+
+if(e.key === "Escape"){
+stopSpeaking();
+}
+
+});
+</script>
+<div id="tagContainer"></div>
+<div id="micPopup" style="
+position:fixed;
+top:30px;
+left:50%;
+transform:translateX(-50%);
+padding:15px 30px;
+background:#ff2a2a;
+box-shadow:0 0 25px #ff2a2a;
+color:black;
+font-weight:bold;
+border-radius:10px;
+display:none;
+z-index:9999;
+font-family:'Orbitron',sans-serif;
+min-width:250px;
+text-align:center;
+">
+Listening...
+</div>
+</body>
+</html> 

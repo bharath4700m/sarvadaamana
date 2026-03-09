@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+
+<title>DHANEKULA COLLEGE CHAT BOT</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+height:100vh;
+background:radial-gradient(circle at center,#0b1c2d,#030b12);
+font-family:'Orbitron',sans-serif;
+display:flex;
+justify-content:center;
+align-items:center;
+color:white;
+}
+
+/* MAIN CHAT CONTAINER */
+
+.chat-container{
+
+width:600px;
+height:700px;
+
+background:#111827;
+
+border:4px solid #00e5ff;
+border-radius:20px;
+
+box-shadow:0 0 40px #00e5ff;
+
+display:flex;
+flex-direction:column;
+
+overflow:hidden;
+
+}
+
+/* HEADER */
+
+.header{
+
+padding:20px;
+
+text-align:center;
+
+font-size:26px;
+
+letter-spacing:3px;
+
+color:#00e5ff;
+
+border-bottom:2px solid #00e5ff;
+
+box-shadow:0 0 20px #00e5ff;
+
+}
+
+/* CHAT AREA */
+
+.chat-box{
+
+flex:1;
+
+padding:20px;
+
+overflow-y:auto;
+
+display:flex;
+
+flex-direction:column;
+
+gap:12px;
+
+}
+
+/* MESSAGE */
+
+.message{
+
+padding:10px 14px;
+
+border-radius:12px;
+
+max-width:75%;
+
+font-size:14px;
+
+}
+
+/* USER MESSAGE */
+
+.user{
+
+background:#ff4444;
+
+align-self:flex-end;
+
+}
+
+/* BOT MESSAGE */
+
+.bot{
+
+background:#00e5ff;
+
+color:black;
+
+align-self:flex-start;
+
+}
+
+/* INPUT AREA */
+
+.input-area{
+
+display:flex;
+
+padding:15px;
+
+border-top:2px solid #00e5ff;
+
+gap:10px;
+
+}
+
+/* INPUT */
+
+input{
+
+flex:1;
+
+padding:10px;
+
+border-radius:8px;
+
+border:none;
+
+outline:none;
+
+font-family:'Orbitron',sans-serif;
+
+}
+
+/* BUTTON */
+
+button{
+
+padding:10px 16px;
+
+border:none;
+
+border-radius:8px;
+
+background:#00e5ff;
+
+cursor:pointer;
+
+font-family:'Orbitron',sans-serif;
+
+font-weight:bold;
+
+}
+
+button:hover{
+
+background:#00c3ff;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+
+<div class="chat-container">
+
+<div class="header">
+DHANEKULA COLLEGE CHAT BOT
+</div>
+
+
+<div class="chat-box" id="chatBox">
+</div>
+
+
+<div class="input-area">
+
+<input id="userInput" placeholder="Ask something...">
+
+<button onclick="sendMessage()">Send</button>
+
+</div>
+
+</div>
+
+
+
+<script>
+
+function addMessage(text,type){
+
+const chatBox=document.getElementById("chatBox");
+
+const msg=document.createElement("div");
+
+msg.classList.add("message");
+
+msg.classList.add(type);
+
+msg.innerText=text;
+
+chatBox.appendChild(msg);
+
+chatBox.scrollTop=chatBox.scrollHeight;
+
+}
+
+
+
+/* SEND MESSAGE */
+
+async function sendMessage(){
+
+const input=document.getElementById("userInput");
+
+const text=input.value.trim();
+
+if(text==="") return;
+
+addMessage(text,"user");
+
+input.value="";
+
+const lower=text.toLowerCase();
+
+/* CREATOR RESPONSE */
+
+if(
+lower.includes("who created you") ||
+lower.includes("your creator") ||
+lower.includes("who made you") ||
+lower.includes("who developed you") ||
+lower.includes("who built you")
+){
+
+addMessage("Bharath is my creator.","bot");
+return;
+
+}
+
+try{
+
+const response = await fetch("http://localhost:3000/ask",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+question:text
+})
+
+});
+
+const data=await response.json();
+
+if(data.answer){
+
+addMessage(data.answer,"bot");
+
+}else{
+
+addMessage("No response received.","bot");
+
+}
+
+}catch(error){
+
+addMessage("Connection error.","bot");
+
+}
+
+}
+
+/* ENTER KEY */
+
+document.getElementById("userInput").addEventListener("keypress",function(e){
+
+if(e.key==="Enter"){
+
+sendMessage();
+
+}
+
+});
+
+</script>
+
+</body>
+</html>
